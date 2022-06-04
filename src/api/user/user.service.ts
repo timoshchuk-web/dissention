@@ -21,12 +21,11 @@ export class UserService {
                 if (userData.password !== user.password) {
                         throw new UnauthorizedException('Incorrect credentials');
                 }
-                const {password, ...profile} = user;
                 return this.signUser(user);
         }
 
         signUser(userData: User): string {
-                return this.jwtService.sign({sub: userData.username, email: userData.email}, {secret: process.env.JWT_SECRET, expiresIn: '1h'});
+                return this.jwtService.sign({userData});
         }
 
         async createUser(userData: CreateUserDto): Promise<UserDto> {
