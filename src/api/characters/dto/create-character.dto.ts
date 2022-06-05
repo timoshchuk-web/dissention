@@ -5,5 +5,4 @@ export class CreateCharacterInterface {
         user: User;
         nickname: string;
         lvl: number;
-        _id?: string;
 }

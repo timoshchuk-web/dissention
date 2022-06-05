@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CharacterInterface } from './dto/character.dto';
@@ -7,8 +8,11 @@ import { Character, CharacterDocument } from './schemas/character.schema';
 
 @Injectable()
 export class CharacterService {
-  
-        constructor(@InjectModel(Character.name) private characterModel: Model<CharacterDocument>) {}
+
+        constructor(
+                private eventEmitter: EventEmitter2,
+                @InjectModel(Character.name) private characterModel: Model<CharacterDocument>
+        ) {}
 
         async getAll(): Promise<CharacterInterface[]> {
                 return this.characterModel.find().populate('user').exec();
@@ -18,9 +22,13 @@ export class CharacterService {
                 return this.characterModel.findById(id);
         }
 
-        async createChar(char: CreateCharacterInterface): Promise<CreateCharacterInterface> {
+        async createChar(char: CreateCharacterInterface): Promise<Character> {
                 const newChar = new this.characterModel(char);
-                return newChar.save();
+                await Promise.all([
+                        newChar.save(),
+                        this.eventEmitter.emit('order.created', newChar),
+                ])
+                return newChar;
         }
 
         async deleteUser(id: string): Promise<CharacterInterface> {

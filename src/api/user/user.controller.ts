@@ -9,26 +9,25 @@ export class UserController {
 
         constructor(private userService: UserService){}
 
+        @Post('login')
+        logInUser(@Body() body: CreateUserDto): Promise<UserDto> {
+                return this.userService.logInUser(body);
+        }
+
+        @Post('create')
+        createUser(@Body() body: CreateUserDto): Promise<{email: string}> {
+                return this.userService.signUpUser(body);
+        }
+
         @UseGuards(AuthGuard('jwt'))
         @Get()
         findAll(): Promise<UserDto[]> {
-                console.log('payload');
                 return this.userService.getAll();
         }
 
         @Get(':id')
         getById(@Param('id') id: string): Promise<UserDto> {
                 return this.userService.getById(id);
-        }
-
-        @Post('login')
-        logInUser(@Body() body: CreateUserDto): Promise<UserDto> {
-                return this.userService.logInUser(body);
-        }
-
-        @Post()
-        createUser(@Body() body: CreateUserDto): Promise<UserDto> {
-                return this.userService.createUser(body);
         }
 
         @Delete(':id')

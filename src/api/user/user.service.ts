@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -6,6 +6,9 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UserDto } from './dto/user.dto';
 import { User, UserDocument } from './schemas/user.schema';
 import * as bcrypt from 'bcrypt';
+import { CreateCharacterInterface } from '../characters/dto/create-character.dto';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { Character } from '../characters/schemas/character.schema';
 
 @Injectable()
 export class UserService {
@@ -22,13 +25,11 @@ export class UserService {
                 if (!await bcrypt.compare(userData.password, user.password)) {
                         throw new UnauthorizedException('Incorrect credentials');
                 }
-
                 const {password, ...userInfo} = user;
                 const res: UserDto = {
                         token: await this.signUser(user),
                         ...userInfo
                 }
-                
                 return res;
         }
 
@@ -37,33 +38,52 @@ export class UserService {
                 return this.jwtService.sign(payload);
         }
 
-        async createUser(userData: CreateUserDto): Promise<UserDto> {
+        async signUpUser(userData: CreateUserDto): Promise<{email: string}> {
                 const user = await this.userModel.findOne({email: userData.email});
                 if (user) {
                         throw new UnauthorizedException('User already exists');
                 }
-
                 const newUser = new this.userModel({
                         ...userData,
                         password: await bcrypt.hash(userData.password, 10)
                 });
-
-                return await newUser.save();
+                await newUser.save();
+                const {password, email, _id} = newUser;
+                return {
+                        email: email
+                };
         }
 
-  async getAll(): Promise<UserDto[]> {
-    return this.userModel.find().populate('characters').exec();
-  }
+        @OnEvent('order.created')
+        handleOrderCreatedEvent(payload: Character) {
+                console.log(payload);
+                this.addCharacterToUser(payload);
+        }
 
-  async getById(id: string): Promise<UserDto> {
-    return this.userModel.findById(id);
-  }
+        async addCharacterToUser(characterData: Character): Promise<void> {
+                const user = await this.userModel.findById(characterData.user);
+                if (!user) {
+                        throw new NotFoundException('User to update character not found');
+                }
+                user.characters.push(characterData['_id']);
+                await user.save();
+        }
 
-  async deleteUser(id: string): Promise<UserDto> {
-    return this.userModel.findByIdAndRemove(id);
-  }
+        async getById(id: string): Promise<UserDto> {
+                const user = await this.userModel.findById(id).populate('characters').lean();
+                const {password, ...userInfo} = user;
+                return userInfo;
+        }
 
-  async updateUser(id: string, updatedUser: UserDto): Promise<UserDto> {
-    return this.userModel.findByIdAndUpdate(id, updatedUser, { new: false });
-  }
+        async getAll(): Promise<UserDto[]> {
+                return this.userModel.find().populate('characters').exec();
+        }
+
+        async deleteUser(id: string): Promise<UserDto> {
+                return this.userModel.findByIdAndRemove(id);
+        }
+
+        async updateUser(id: string, updatedUser: UserDto): Promise<UserDto> {
+                return this.userModel.findByIdAndUpdate(id, updatedUser, { new: false });
+        }
 }

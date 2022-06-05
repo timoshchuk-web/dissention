@@ -2,8 +2,9 @@ import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common'
 import { CharacterInterface } from './dto/character.dto';
 import { CreateCharacterInterface } from './dto/create-character.dto';
 import { CharacterService } from './character.service';
+import { Character } from './schemas/character.schema';
 
-@Controller('user/characters')
+@Controller('characters')
 export class CharacterController {
   constructor(private characterService: CharacterService){}
 
@@ -18,7 +19,7 @@ export class CharacterController {
         }
 
         @Post()
-        createChar(@Body() body: CreateCharacterInterface): Promise<CreateCharacterInterface> {
+        createChar(@Body() body: CreateCharacterInterface): Promise<Character> {
                 return this.characterService.createChar(body);
         }
 

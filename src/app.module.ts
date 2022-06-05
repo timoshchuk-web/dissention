@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose'
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './api/user/user.module';
@@ -6,8 +6,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CharacterModule } from './api/characters/character.module';
 import { BackpackModule } from './api/backpack/backpack.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
-
+@Global()
 @Module({
   imports: [
     MongooseModule.forRootAsync({
@@ -16,6 +17,7 @@ import { BackpackModule } from './api/backpack/backpack.module';
       }),
     }),
     ConfigModule.forRoot(),
+    EventEmitterModule.forRoot(),
     UserModule,
     CharacterModule,
     BackpackModule

@@ -5,12 +5,10 @@ import { User, UserSchema } from './schemas/user.schema';
 import { UserService } from './user.service';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategy/jwt.strategy';
-import { PassportModule } from '@nestjs/passport';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    PassportModule,
     JwtModule.register({
         secret: `${process.env.JWT_SECRET}`,
         signOptions: { expiresIn: '1d' }
