@@ -1,10 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserDto } from './dto/user.dto';
 import { User, UserDocument } from './schemas/user.schema';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -13,24 +14,41 @@ export class UserService {
                 @InjectModel(User.name) private userModel: Model<UserDocument>,
         ) {}
 
-        async logInUser(userData: CreateUserDto): Promise<string> {
-                const user = await this.userModel.findOne({email: userData.email});
+        async logInUser(userData: CreateUserDto): Promise<UserDto> {
+                const user = await this.userModel.findOne({email: userData.email}).lean();
                 if (!user) {
                         throw new UnauthorizedException('User does not exist');
                 }
-                if (userData.password !== user.password) {
+                if (!await bcrypt.compare(userData.password, user.password)) {
                         throw new UnauthorizedException('Incorrect credentials');
                 }
-                return this.signUser(user);
+
+                const {password, ...userInfo} = user;
+                const res: UserDto = {
+                        token: await this.signUser(user),
+                        ...userInfo
+                }
+                
+                return res;
         }
 
-        signUser(userData: User): string {
-                return this.jwtService.sign({userData});
+        signUser(userData: UserDto): string {
+                const payload = {id: userData['_id'], email: userData.email}
+                return this.jwtService.sign(payload);
         }
 
         async createUser(userData: CreateUserDto): Promise<UserDto> {
-                const newUser = new this.userModel(userData);
-                return newUser.save();
+                const user = await this.userModel.findOne({email: userData.email});
+                if (user) {
+                        throw new UnauthorizedException('User already exists');
+                }
+
+                const newUser = new this.userModel({
+                        ...userData,
+                        password: await bcrypt.hash(userData.password, 10)
+                });
+
+                return await newUser.save();
         }
 
   async getAll(): Promise<UserDto[]> {

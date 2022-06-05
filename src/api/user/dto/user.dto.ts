@@ -5,7 +5,8 @@ import { User } from "../schemas/user.schema";
 export class UserDto {
         _id: User;
         username: string;
-        email?: string;
-        token?: string;
+        email: string;
+        password?: string;
+        token: string;
         characters: CreateCharacterInterface[];
 }

@@ -9,8 +9,10 @@ export class UserController {
 
         constructor(private userService: UserService){}
 
+        @UseGuards(AuthGuard('jwt'))
         @Get()
         findAll(): Promise<UserDto[]> {
+                console.log('payload');
                 return this.userService.getAll();
         }
 
@@ -19,9 +21,8 @@ export class UserController {
                 return this.userService.getById(id);
         }
 
-        //@UseGuards(AuthGuard('jwt'))
         @Post('login')
-        logInUser(@Body() body: CreateUserDto): Promise<string> {
+        logInUser(@Body() body: CreateUserDto): Promise<UserDto> {
                 return this.userService.logInUser(body);
         }
 
