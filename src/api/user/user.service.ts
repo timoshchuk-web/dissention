@@ -18,7 +18,7 @@ export class UserService {
         ) {}
 
         async logInUser(userData: CreateUserDto): Promise<UserDto> {
-                const user = await this.userModel.findOne({email: userData.email}).lean();
+                const user = await this.userModel.findOne({email: userData.email}).populate('characters').lean();
                 if (!user) {
                         throw new UnauthorizedException('User does not exist');
                 }
